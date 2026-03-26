@@ -13,6 +13,11 @@
 - **Secondary goal:** Enable safe and fast first PR
 - **Repository type:** Yarn workspaces monorepo
 
+### Scope Clarification
+
+This document onboards developers to the external repository `excalidraw/excalidraw`.
+All file paths and architecture references are relative to that target repository, not this `is-01-docs` repository.
+
 ---
 
 ## Quick Navigation
@@ -46,7 +51,7 @@ This structure allows:
 
 ## Monorepo and Package Boundaries
 
-## Workspace Structure
+### Workspace Structure
 
 - `packages/common` — shared constants/utilities/event infrastructure
 - `packages/math` — geometry primitives and 2D math utilities
@@ -56,7 +61,7 @@ This structure allows:
 - `excalidraw-app` — full host application
 - `examples/*` — integration references
 
-## Dependency Direction
+### Dependency Direction
 
 > **Important**  
 > Preserve layering. Avoid introducing app-level dependencies into core packages.
@@ -92,7 +97,7 @@ flowchart LR
 
 ## Runtime Architecture
 
-## 1. Library Entrypoint and Public Surface
+### 1. Library Entrypoint and Public Surface
 
 **File:** `packages/excalidraw/index.tsx`
 
@@ -107,7 +112,7 @@ Why this matters:
 - this file defines what external integrators and the app can consume
 - API changes here have broad impact
 
-## 2. Editor Runtime Core
+### 2. Editor Runtime Core
 
 **File:** `packages/excalidraw/components/App.tsx`
 
@@ -122,7 +127,7 @@ Responsibilities:
 Why this matters:
 - most behavior changes in editing experience eventually route here
 
-## 3. Host App Bootstrap and Composition
+### 3. Host App Bootstrap and Composition
 
 **Files:** `excalidraw-app/index.tsx`, `excalidraw-app/App.tsx`
 
@@ -160,7 +165,7 @@ flowchart TD
 
 ## Critical Data Flows
 
-## A. Scene Initialization Flow
+### A. Scene Initialization Flow
 
 Entry point behavior in app startup combines scene candidates from:
 
@@ -174,7 +179,7 @@ Technical implications:
 - app decides conflict/overwrite behavior when external scene exists
 - restoration pipeline uses `restoreElements`/`restoreAppState` utilities
 
-## B. Share Link Export/Import Pipeline
+### B. Share Link Export/Import Pipeline
 
 **File:** `excalidraw-app/data/index.ts`
 
@@ -222,7 +227,7 @@ sequenceDiagram
   Data-->>App: restored elements/appState
 ```
 
-## C. Collaboration Sync Pipeline
+### C. Collaboration Sync Pipeline
 
 **Primary file:** `excalidraw-app/collab/Collab.tsx`
 
@@ -261,7 +266,7 @@ sequenceDiagram
   ClientB->>FB: fetch missing image files
 ```
 
-## D. File/Binary Asset Pipeline
+### D. File/Binary Asset Pipeline
 
 Image elements reference file IDs; binaries are managed separately:
 
@@ -273,7 +278,7 @@ Image elements reference file IDs; binaries are managed separately:
 
 ## Build and Test Infrastructure
 
-## Toolchain Summary
+### Toolchain Summary
 
 - **Package manager:** Yarn v1 workspaces
 - **Node version:** `>=18`
@@ -282,12 +287,12 @@ Image elements reference file IDs; binaries are managed separately:
 - **Tests:** Vitest
 - **Lint/format:** ESLint + Prettier
 
-## Source Aliasing in Dev/Test
+### Source Aliasing in Dev/Test
 
 Both app Vite and root Vitest configs alias `@excalidraw/*` imports to local package source files.  
 This enables in-place package development without publishing interim package versions.
 
-## Key Root Commands
+### Key Root Commands
 
 ```bash
 yarn start
@@ -306,14 +311,14 @@ yarn fix
 
 ## Local Development Setup
 
-## 1) Install and Run
+### 1) Install and Run
 
 ```bash
 yarn
 yarn start
 ```
 
-## 2) Environment Model
+### 2) Environment Model
 
 Root env files:
 
@@ -331,7 +336,7 @@ Contain runtime config for:
 
 Vite app config uses root env directory (`envDir: "../"`), so environment values are sourced from repository root.
 
-## 3) Build-Time Behavior to Know
+### 3) Build-Time Behavior to Know
 
 In `excalidraw-app/vite.config.mts`:
 
@@ -364,7 +369,7 @@ Use this when choosing edit location.
 
 ## First PR Technical Path
 
-## Recommended sequence
+### Recommended sequence
 
 1. Identify failing behavior and map to correct layer
 2. Reproduce with local app run (`yarn start`)
@@ -376,7 +381,7 @@ Use this when choosing edit location.
 5. Verify behavior manually in app scenario
 6. Submit focused PR with technical test notes
 
-## Minimal Quality Gate Checklist
+### Minimal Quality Gate Checklist
 
 - [ ] Correct layer and module chosen
 - [ ] Type checks pass
@@ -388,7 +393,7 @@ Use this when choosing edit location.
 
 ## Appendix: File Map
 
-## High-Value Entry Points
+### High-Value Entry Points
 
 - Root workspace config: `package.json`
 - Root test/alias config: `vitest.config.mts`
@@ -404,7 +409,7 @@ Use this when choosing edit location.
 
 ---
 
-## Expand: Suggested Deep-Dive Order (Day 1-2)
+### Expand: Suggested Deep-Dive Order (Day 1-2)
 
 1. `packages/excalidraw/index.tsx` (public surface)
 2. `packages/excalidraw/components/App.tsx` (runtime core)
