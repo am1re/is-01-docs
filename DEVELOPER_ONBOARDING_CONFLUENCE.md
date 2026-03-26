@@ -44,8 +44,6 @@ This structure allows:
 - separation of app-specific concerns (collab backends, app shell, deployment config)
 - clear ownership of geometry/model/UI runtime responsibilities
 
----
-
 ## Monorepo and Package Boundaries
 
 ## Workspace Structure
@@ -70,6 +68,25 @@ Typical dependency graph:
 - `@excalidraw/element` depends on `common`, `math`
 - `@excalidraw/excalidraw` depends on `common`, `math`, `element`, `utils`
 - `excalidraw-app` depends on `@excalidraw/excalidraw` + app services
+
+```mermaid
+flowchart LR
+  C["@excalidraw/common"]
+  M["@excalidraw/math"]
+  E["@excalidraw/element"]
+  U["@excalidraw/utils"]
+  X["@excalidraw/excalidraw"]
+  A["excalidraw-app"]
+
+  C --> M
+  C --> E
+  M --> E
+  C --> X
+  M --> X
+  E --> X
+  U --> X
+  X --> A
+```
 
 ---
 
@@ -119,6 +136,26 @@ Responsibilities:
   - local storage/session behavior
   - app-level menus, sidebars, and welcome surfaces
 
+```mermaid
+flowchart TD
+  Start["Browser loads app"] --> Entry["excalidraw-app/index.tsx"]
+  Entry --> SW["registerSW()"]
+  Entry --> App["Render excalidraw-app/App.tsx"]
+  App --> Init["initializeScene(...)"]
+
+  Init --> LS["Import local storage scene"]
+  Init --> URL["Read URL/hash scene params"]
+  Init --> Collab["Read collaboration link data"]
+  Init --> Backend["Import scene from backend if needed"]
+
+  LS --> Merge["Restore + reconcile scene/appState"]
+  URL --> Merge
+  Collab --> Merge
+  Backend --> Merge
+
+  Merge --> Mount["Mount <Excalidraw />"]
+```
+
 ---
 
 ## Critical Data Flows
@@ -160,6 +197,31 @@ Security-relevant detail:
 
 - key material is placed in URL hash instead of query to avoid server-side propagation through standard request logs.
 
+```mermaid
+sequenceDiagram
+  participant User
+  participant App as excalidraw-app
+  participant Data as data/index.ts
+  participant JSON as JSON Backend
+  participant FB as Firebase Files
+
+  User->>App: Export shareable link
+  App->>Data: serialize scene + files
+  Data->>Data: compress + encrypt payload
+  Data->>JSON: POST encrypted scene
+  JSON-->>Data: share id
+  Data->>FB: upload image binaries
+  Data-->>App: URL with hash key (#json=id,key)
+  App-->>User: Shareable URL
+
+  User->>App: Open share URL
+  App->>Data: importFromBackend(id, key)
+  Data->>JSON: GET encrypted payload
+  JSON-->>Data: encrypted bytes
+  Data->>Data: decompress + decrypt + parse
+  Data-->>App: restored elements/appState
+```
+
 ## C. Collaboration Sync Pipeline
 
 **Primary file:** `excalidraw-app/collab/Collab.tsx`
@@ -177,6 +239,27 @@ Supporting pieces:
 - `Portal` for socket transport semantics
 - data helpers for room link generation and syncable element filtering
 - file status tracking via `fileStatusStore`
+
+```mermaid
+sequenceDiagram
+  participant ClientA as Client A
+  participant WS as Collab WS Server
+  participant ClientB as Client B
+  participant FB as Firebase Files
+
+  ClientA->>WS: Join room (roomId, roomKey context)
+  ClientB->>WS: Join room
+  WS-->>ClientA: INIT/room state
+  WS-->>ClientB: INIT/room state
+
+  ClientA->>WS: SCENE_UPDATE (syncable elements)
+  WS-->>ClientB: SCENE_UPDATE
+  ClientA->>WS: MOUSE_LOCATION / IDLE_STATUS / BOUNDS
+  WS-->>ClientB: presence updates
+
+  ClientA->>FB: upload added image files
+  ClientB->>FB: fetch missing image files
+```
 
 ## D. File/Binary Asset Pipeline
 
